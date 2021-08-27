@@ -10,19 +10,73 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+
+  const user = users.find(user => user.username === username);
+
+  if (!user) {
+    return response.status(404).json({ error: "User not found" });
+  }
+
+  request.user = user;
+
+  return next();
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const { user } = request;
+
+  if (user.pro === true || (user.pro === false && user.todos.length < 10)) {
+    return next()
+  }
+
+  return response.status(403).json({ error: "Todos limit reached" });
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+
+  const { id } = request.params;
+
+  const user = users.find(user => user.username = username);
+
+  if (!user) {
+    return response.status(404).json({ error: "User not found" });
+  }
+
+  const isValidUUID = validate(id);
+
+  if (!isValidUUID) {
+    return response.status(400).json({ error: "Invalid ID" });
+  }
+
+  const todo = user.todos.find(todo => todo.id === id);
+
+  if (!todo) {
+    return response.status(404).json({ error: "Todo not found" });
+  }
+
+  console.log(todo);
+
+  request.todo = todo;
+  request.user = user;
+
+  console.log(request);
+  return next();
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const { id } = request.params;
+
+  const user = users.find(user => user.id === id);
+
+  if (!user) {
+    return response.status(404).json({ error: "User not found" });
+  }
+
+  request.user = user;
+
+  return next();
 }
 
 app.post('/users', (request, response) => {
@@ -92,6 +146,8 @@ app.put('/todos/:id', checksTodoExists, (request, response) => {
   const { title, deadline } = request.body;
   const { todo } = request;
 
+  console.log(todo)
+
   todo.title = title;
   todo.deadline = new Date(deadline);
 
@@ -108,7 +164,7 @@ app.patch('/todos/:id/done', checksTodoExists, (request, response) => {
 
 app.delete('/todos/:id', checksExistsUserAccount, checksTodoExists, (request, response) => {
   const { user, todo } = request;
-
+  console.log(todo);
   const todoIndex = user.todos.indexOf(todo);
 
   if (todoIndex === -1) {
